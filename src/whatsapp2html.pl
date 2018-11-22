@@ -40,7 +40,7 @@ while(<$fp>)
         PrintMessage($person, '', '', $text);
     }
 }
-
+ClearBoth();
 PrintHTMLFooter();
 
 sub PrintDate
@@ -80,12 +80,23 @@ sub PrintMessage
 sub EmojifyText
 {
     my($text) = @_;
-#    $text = decode_utf8 $text;
-    if($text =~ /(\N{U+1F600})/)
+    my $out = '';
+    my @chars = split(//, $text);
+    foreach my $char (@chars)
     {
-        $text =~ s/$1/{X}/;
+        my $asc = ord($char);
+        if($asc < 255)
+        {
+            $out .= $char;
+        }
+        else
+        {
+            my $hex = sprintf("%x", $asc);
+            $out .= "<img src='emojis/$hex.png' width='30px' alt='{$hex}'/>";
+        }
     }
-    return($text);
+
+    return($out);
 }
 
 sub PrintHTMLHeader

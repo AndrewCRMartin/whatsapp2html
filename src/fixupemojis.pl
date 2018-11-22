@@ -11,7 +11,7 @@ foreach my $file (@files)
         my $link = "$unicode.png";
         if(! -e $link)
         {
-            my $exe = `ln -s $file $link`;
+            my $exe = `cp $file $link`;
             `$exe`;
         }
     }
