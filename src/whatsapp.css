@@ -1,0 +1,67 @@
+body {background: #ffffff; 
+      margin: 0; 
+      padding: 10px;
+      text-align: center;}
+.whatsapp {width: 800px;
+           display: inline-block;
+           background: #eeeeee; 
+           font: 12pt Helvetica,Arial,sans-serif;
+}
+p {padding: 0; margin: 0;}
+.msghead { padding: 1px 4px;
+           border-radius: 5px;
+           margin: 0 0 2px 0;
+           font-weight: bold;
+}
+.person {width: 400px; 
+         padding: 5px;
+         margin: 5px;
+         text-align: left;
+         border-radius: 10px;
+}
+.person0 {background: #ffffff;}
+.person0 .msghead {background: #dddddd;
+                   color: #444444;
+
+}
+
+.person0:after {
+    content:"";
+    border-color: #ffffff transparent transparent transparent;
+    border-style:solid;
+    border-width:20px;
+    width:0;
+    height:0;
+    position:relative;
+    bottom:-40px;
+    left:20px
+}
+
+.person1 {background: #33aa33; float: right;}
+.person1 .msghead {background: #118811;
+                   color: #222222;
+}
+
+.person1:after {
+    content:"";
+    border-color: #33aa33 transparent transparent transparent;
+    border-style:solid;
+    border-width:20px;
+    width:0;
+    height:0;
+    position:relative;
+    bottom:-40px;
+    left:340px
+}
+
+
+.datewrap {text-align: center;}
+.date {background: #aaaaaa;
+       text-align: center;
+       width: 90%;
+       padding: 10px;
+       display: inline-block;
+       border-radius: 20px;
+       border: 1px solid #666666;
+}
+
