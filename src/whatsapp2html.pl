@@ -34,7 +34,7 @@ while(<$fp>)
 
         PrintMessage($person, $name, $time, $text);
     }
-    elsif(! /^\d+\/\d+\/\d+/)
+    elsif(length && (! /^\d+\/\d+\/\d+/))
     {
         my $text = $_;
         PrintMessage($person, '', '', $text);
@@ -88,6 +88,10 @@ sub EmojifyText
         if($asc < 255)
         {
             $out .= $char;
+        }
+        elsif($asc == 8217)
+        {
+            $out .= "'";
         }
         else
         {
