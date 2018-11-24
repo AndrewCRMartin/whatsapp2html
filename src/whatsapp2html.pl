@@ -77,28 +77,74 @@ sub PrintMessage
         
 }
 
+sub PrintHex
+{
+    my($out, $nHexSet, @hexSet) = @_;
+
+    while($nHexSet >= 3)
+    {
+        my $allHex = $hexSet[0] . '-' . $hexSet[1] . '-' . $hexSet[2];
+        my $emoji = 'emojis/' . $allHex . '.png';
+        if( -e $emoji)
+        {
+            $out .= "<img src='$emoji' width='30px' alt='{$allHex}'/>";
+            for(my $i=0; $i<3; $i++)
+            {
+                shift @hexSet;
+                $nHexSet--;
+            }
+        }
+        else
+        {
+            $out .= "<img src='emojis/$hexSet[0].png' width='30px' alt='{$hexSet[0]}'/>";
+            shift @hexSet;
+            $nHexSet--;
+        }
+    }
+
+    while($nHexSet)
+    {
+        $out .= "<img src='emojis/$hexSet[0].png' width='30px' alt='{$hexSet[0]}'/>";
+        shift @hexSet;
+        $nHexSet--;
+    }
+    return($out);
+}
+
+
 sub EmojifyText
 {
     my($text) = @_;
     my $out = '';
     my @chars = split(//, $text);
+    my @hexSet = ();
+    my $nHexSet = 0;
+
     foreach my $char (@chars)
     {
         my $asc = ord($char);
         if($asc < 255)
         {
-            $out .= $char;
+            $out = PrintHex($out, $nHexSet, @hexSet);
+
+            $out    .= $char;
+            @hexSet  = ();
+            $nHexSet = 0;
         }
         elsif($asc == 8217)
         {
-            $out .= "'";
+            $out    .= "'";
+            @hexSet  = ();
+            $nHexSet = 0;
         }
         else
         {
             my $hex = sprintf("%x", $asc);
-            $out .= "<img src='emojis/$hex.png' width='30px' alt='{$hex}'/>";
+            $hexSet[$nHexSet++] = $hex;
         }
     }
+
+    $out = PrintHex($out, $nHexSet, @hexSet);
 
     return($out);
 }
