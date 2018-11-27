@@ -192,6 +192,13 @@ sub FixImageLink
         $text =~ s/\s+\(file attached\)//;
         $text =~ s/$img/<a href='$img'><img src='$img' alt='$img' width='400px' \/><\/a>/;
     }
+    if($text =~ /(VID.*)\s+\(file attached\)/)
+    {
+        my $vid = $1;
+        $text =~ s/\s+\(file attached\)//;
+#        $text =~ s/$vid/<embed src='$vid' autostart='false' width='400px' \/>/;
+        $text =~ s/$vid/<a href='$vid' title='$vid'>$vid<\/a>/;
+    }
 
     return($text);
 }
