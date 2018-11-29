@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 use strict;
-my $emojiURL = "https://emojipedia.org/whatsapp/2.17/";
+$::emojiURL = "https://emojipedia.org/whatsapp/2.17/";
 if(scalar(@ARGV))
 {
     my $val = shift @ARGV;
@@ -10,61 +10,87 @@ if(scalar(@ARGV))
     }
     else
     {
-        $emojiURL = $val;
+        $::emojiURL = $val;
     }
 }
 
-my $exe = '';
+GrabEmojis($::emojiURL);
+FixUpEmojis();
 
-print STDERR ">>>> Grabbing index of emojis from $emojiURL\n\n";
-$exe = "wget $emojiURL";
-`$exe`;
-print STSERR ">>>> done\n\n";
-
-print STDERR ">>>> Grabbing emojis\n\n";
-
-my $fileName = GetFilename($emojiURL);
-if(open(my $fp, '<', "$fileName"))
+sub FixUpEmojis
 {
-    while(<$fp>)
+    opendir my $dfh, "." || die;
+
+    my @files = readdir $dfh;
+    foreach my $file (@files)
     {
-        chomp;
-        if(/\<img/)
+        if($file =~ /.*_(.*?)\.png/)
         {
-            if(/ data-src\s*?=\s*?"(.*?)"/)
+            my $unicode = $1;
+            my $link = "$unicode.png";
+            if((! -e $link) || $::force)
             {
-                $exe = "wget $1";
+                my $exe = `mv $file $link`;
                 `$exe`;
             }
-            elsif(/ src\s*?=\s*?"(.*?)"/)
+            else
             {
-                $exe = "wget $1";
-                `$exe`;
+                unlink $file;
             }
         }
     }
-    close $fp;
-    unlink $fileName;
-}
-else
-{
-    print STDERR ">>>Unable to download and open $fileName\n";
 }
 
-print STSERR ">>>> done\n\n";
-
-sub UsageDie
+sub GrabEmojis
 {
-    print <<__EOF;
+    my($emojiURL) = @_;
+    my $exe = '';
 
-getemojis.pl
-
-Usage: getemojis.pl [url]
-
-Gets WhatsApp emojis as PNG files.
-
-__EOF
-
+    # First grab the list of emojis
+    print STDERR ">>>> Grabbing index of emojis from $emojiURL\n\n";
+    $exe = "wget $emojiURL";
+    `$exe`;
+    print STSERR ">>>> done\n\n";
+    my $fileName = GetFilename($emojiURL);
+    
+    # Now grab the actual emojis
+    print STDERR ">>>> Grabbing emojis\n\n";
+    if(open(my $fp, '<', "$fileName"))
+    {
+        while(<$fp>)
+        {
+            chomp;
+            if(/\<img/)
+            {
+                if(/ data-src\s*?=\s*?"(.*?)"/)
+                {
+                    my $url = $1;
+                    if((! -e $url) || defined($::force))
+                    {
+                        $exe = "wget $1";
+                        `$exe`;
+                    }
+                }
+                elsif(/ src\s*?=\s*?"(.*?)"/)
+                {
+                    my $url = $1;
+                    if((! -e $url) || defined($::force))
+                    {
+                        $exe = "wget $1";
+                        `$exe`;
+                    }
+                }
+            }
+        }
+        close $fp;
+        unlink $fileName;
+    }
+    else
+    {
+        print STDERR ">>>Unable to download and open $fileName\n";
+    }
+    
+    print STSERR ">>>> done\n\n";
 }
 
 sub GetFilename
@@ -79,3 +105,32 @@ sub GetFilename
     }
     return($fnm);
 }
+
+sub UsageDie
+{
+    print <<__EOF;
+
+getemojis.pl
+
+Usage: getemojis.pl [-force] [url]
+       -force Download files even if they exist
+
+Gets WhatsApp emojis as PNG files and rename them to their UNICODE names.
+
+This is a utility program and not designed to be run by the end user.
+- Create a directory called 'emojis'
+- cd to the 'emojis' directory and run this program.
+- use 
+  'tar zcvf emojis.tgz emojis'
+  to create a gzipped tar file of the emojis directory
+- remove the 'emojis' directory
+- Place the 'emojis.tgz' file in the root directory of the whatsapp2html
+  software
+
+By default, emojis will be obtained from $::emojiURL
+
+__EOF
+
+    exit 0;
+}
+
