@@ -92,12 +92,12 @@ while(<$fp>)
             ClearBoth($fpOut);
         }
 
-        PrintMessage($fpOut, $person, $name, $time, $text);
+        PrintMessage($fpOut, $person, $name, $time, $text, $emojiInDir, $emojiOutDir, $inDir, $outDir);
     }
     elsif(length && (! /^\d+\/\d+\/\d+/))
     {
         my $text = $_;
-        PrintMessage($fpOut, $person, '', '', $text);
+        PrintMessage($fpOut, $person, '', '', $text, $emojiInDir, $emojiOutDir, $inDir, $outDir);
     }
 }
 ClearBoth($fpOut);
@@ -118,9 +118,9 @@ __EOF
 
 sub PrintMessage
 {
-    my($fpOut, $person, $name, $time, $text) = @_;
-    $text = FixImageLink($text);
-    $text = EmojifyText($text);
+    my($fpOut, $person, $name, $time, $text, $emojiInDir, $emojiOutDir, $inDir, $outDir) = @_;
+    $text = FixImageLink($text, $inDir, $outDir);
+    $text = EmojifyText($text, $emojiInDir, $emojiOutDir);
     if($name ne '')
     {
         print $fpOut "<div class='person person$person'>\n";
@@ -137,17 +137,31 @@ sub PrintMessage
         
 }
 
+# This code needs to be a bit more complex since the extended codes
+# are not all three characters as assumed here. Some are 8-, 7-, 
+# or 6-part, lots are 5-, 4-, 3- or 2-part
 sub PrintHex
 {
-    my($out, $nHexSet, @hexSet) = @_;
+    my($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet) = @_;
 
+    # If we have 3 or more Unicode characters in a row
     while($nHexSet >= 3)
     {
+        # Create a filename which combines  the first three codes
         my $allHex = $hexSet[0] . '-' . $hexSet[1] . '-' . $hexSet[2];
-        my $emoji = 'emojis/' . $allHex . '.png';
-        if( -e $emoji)
+
+        # Create the filename and try to copy it over from our store
+        # of emojis
+        my $emojiFile = $allHex . '.png';
+        CopyFile($emojiFile, $emojiInDir, $emojiOutDir);
+
+        # If  the copy was OK, then we have one of these extended emojis, so
+        # reference it in the HTML
+        if( -e "$emojiOutDir/$emojiFile")
         {
-            $out .= "<img src='$emoji' width='30px' alt='{$allHex}'/>";
+            $out .= "<img src='emojis/$emojiFile' width='30px' alt='{$allHex}'/>";
+
+            # Move on to the next Unicode character
             for(my $i=0; $i<3; $i++)
             {
                 shift @hexSet;
@@ -156,14 +170,22 @@ sub PrintHex
         }
         else
         {
+            # The copy failed so we just have a normal single character emoji. Copy
+            # that over and reference it
+            CopyFile("$hexSet[0].png", $emojiInDir, $emojiOutDir);
+            
             $out .= "<img src='emojis/$hexSet[0].png' width='30px' alt='{$hexSet[0]}'/>";
+
+            # Move on to the next Unicode character
             shift @hexSet;
             $nHexSet--;
         }
     }
 
+    # Display any remaining Unicode characters
     while($nHexSet)
     {
+        CopyFile("$hexSet[0].png", $emojiInDir, $emojiOutDir);
         $out .= "<img src='emojis/$hexSet[0].png' width='30px' alt='{$hexSet[0]}'/>";
         shift @hexSet;
         $nHexSet--;
@@ -174,7 +196,7 @@ sub PrintHex
 
 sub EmojifyText
 {
-    my($text) = @_;
+    my($text, $emojiInDir, $emojiOutDir) = @_;
     my $out = '';
     my @chars = split(//, $text);
     my @hexSet = ();
@@ -183,28 +205,33 @@ sub EmojifyText
     foreach my $char (@chars)
     {
         my $asc = ord($char);
-        if($asc < 255)
+        if($asc < 255)  # If it's s normal character
         {
-            $out = PrintHex($out, $nHexSet, @hexSet);
+            # Flush out any Unicode characters that we have
+            $out = PrintHex($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet);
 
+            # Add the normal character
             $out    .= $char;
+
+            # Clear the lists of Unicode characters
             @hexSet  = ();
             $nHexSet = 0;
         }
-        elsif($asc == 8217)
+        elsif($asc == 8217) # Special case of an inverted comma
         {
             $out    .= "'";
             @hexSet  = ();
             $nHexSet = 0;
         }
-        else
+        else # It's unicode so store it
         {
             my $hex = sprintf("%x", $asc);
             $hexSet[$nHexSet++] = $hex;
         }
     }
 
-    $out = PrintHex($out, $nHexSet, @hexSet);
+    # Flush out any remaining unicode characters
+    $out = PrintHex($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet);
 
     return($out);
 }
@@ -250,13 +277,14 @@ sub ClearBoth
 
 sub FixImageLink
 {
-    my($text) = @_;
+    my($text, $inDir, $outDir) = @_;
 
     if($text =~ /(IMG.*)\s+\(file attached\)/)
     {
         my $img = $1;
         $text =~ s/\s+\(file attached\)//;
         $text =~ s/$img/<a href='$img'><img src='$img' alt='$img' width='400px' \/><\/a>/;
+        CopyFile($img, $inDir, $outDir);
     }
     if($text =~ /(VID.*)\s+\(file attached\)/)
     {
@@ -264,6 +292,7 @@ sub FixImageLink
         $text =~ s/\s+\(file attached\)//;
 #        $text =~ s/$vid/<embed src='$vid' autostart='false' width='400px' \/>/;
         $text =~ s/$vid/<a href='$vid' title='$vid'>$vid<\/a>/;
+        CopyFile($vid, $inDir, $outDir);
     }
 
     return($text);
@@ -316,4 +345,16 @@ sub ParseFileName
     return($path, $file);
 }
 
+
+sub CopyFile
+{
+    my($File, $InDir, $OutDir) = @_;
+    if(! -e "$OutDir/$File")
+    {
+        if( -e "$InDir/$File")
+        {
+            `cp $InDir/$File $OutDir`;
+        }
+    }
+}
 
