@@ -1,12 +1,24 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -s
 use strict;
 my $prevDate = '';
 my $prevName = '';
 my $person   = 0;
 
-PrintHTMLHeader();
+if((scalar(@ARGV) == 0) ||
+   (scalar(@ARGV) >  2) || 
+   defined($::h))
+{
+    UsageDie();
+}
 
-open my $fp, "<:encoding(UTF-8)", $ARGV[0] or die;
+my($inDir, $inFile)   = ParseFileName($ARGV[0]);
+my($outDir, $outFile) = ParseFileName(scalar(@ARGV)==2?$ARGV[1]:'.', $ARGV[0]);
+
+open(my $fpOut, '>', $outFile) or die;
+
+PrintHTMLHeader($fpOut);
+
+open my $fp, "<:encoding(UTF-8)", $inFile or die;
 
 while(<$fp>)
 {
@@ -22,7 +34,7 @@ while(<$fp>)
 
         if($date ne $prevDate)
         {
-            PrintDate($date);
+            PrintDate($fpOut, $date);
             $prevDate = $date;
         }
         if($name ne $prevName)
@@ -32,23 +44,23 @@ while(<$fp>)
             ClearBoth();
         }
 
-        PrintMessage($person, $name, $time, $text);
+        PrintMessage($fpOut, $person, $name, $time, $text);
     }
     elsif(length && (! /^\d+\/\d+\/\d+/))
     {
         my $text = $_;
-        PrintMessage($person, '', '', $text);
+        PrintMessage($fpOut, $person, '', '', $text);
     }
 }
-ClearBoth();
-PrintHTMLFooter();
+ClearBoth($fpOut);
+PrintHTMLFooter($fpOut);
 
 sub PrintDate
 {
-    my($date) = @_;
+    my($fpOut, $date) = @_;
 
     ClearBoth();
-    print <<__EOF;
+    print $fpOut <<__EOF;
 <div class='datewrap'>
   <div class='date'>$date</div>
 </div>
@@ -58,21 +70,21 @@ __EOF
 
 sub PrintMessage
 {
-    my($person, $name, $time, $text) = @_;
+    my($fpOut, $person, $name, $time, $text) = @_;
     $text = FixImageLink($text);
     $text = EmojifyText($text);
     if($name ne '')
     {
-        print "<div class='person person$person'>\n";
-        print "  <p class='msghead'>$name: $time</p>\n";
-        print "  <p class='msgbody'>$text</p>\n";
-        print "</div> <!-- person person$person --> \n";
+        print $fpOut "<div class='person person$person'>\n";
+        print $fpOut "  <p class='msghead'>$name: $time</p>\n";
+        print $fpOut "  <p class='msgbody'>$text</p>\n";
+        print $fpOut "</div> <!-- person person$person --> \n";
     }
     else
     {
-        print "<div class='person person$person'>\n";
-        print "  <p class='msgbody'>$text</p>\n";
-        print "</div> <!-- person person$person --> \n";
+        print $fpOut "<div class='person person$person'>\n";
+        print $fpOut "  <p class='msgbody'>$text</p>\n";
+        print $fpOut "</div> <!-- person person$person --> \n";
     }
         
 }
@@ -151,7 +163,9 @@ sub EmojifyText
 
 sub PrintHTMLHeader
 {
-    print <<__EOF;
+    my($fpOut) = @_;
+    
+    print $fpOut <<__EOF;
 
 <html>
 <head>
@@ -167,7 +181,9 @@ __EOF
 
 sub PrintHTMLFooter
 {
-    print <<__EOF;
+    my($fpOut) = @_;
+
+    print $fpOut <<__EOF;
 
 </div> <!-- whatsapp -->
 </body>
@@ -179,7 +195,9 @@ __EOF
 
 sub ClearBoth
 {
-    print "<div style='clear: both;'>&nbsp;</div>\n";
+    my($fpOut) = @_;
+    
+    print $fpOut "<div style='clear: both;'>&nbsp;</div>\n";
 }
 
 sub FixImageLink
@@ -202,3 +220,51 @@ sub FixImageLink
 
     return($text);
 }
+
+sub UsageDie
+{
+    print <<__EOF;
+
+whatsapp2html V1.0 (c) Andrew C.R. Martin
+        
+Usage: whatsapp2html whatsapp.txt [outputdir]
+
+Takes a WhatsApp conversation dump and converts it to HTML, embedding emojis
+and multimedia as required.    
+    
+__EOF
+    exit 0;
+}
+
+sub ParseFileName
+{
+    my($path1, $path2) = @_;
+    my $path = '';
+    my $file = '';
+
+    if($path2 eq '') # Parsing and input filename
+    {
+        if($path1 =~ /(.*)\/(.*?)/)
+        {
+            $path = $1;
+            $file = $2;
+        }
+        else
+        {
+            $path = '.';
+            $file = $2;
+        }
+    }
+    else # Parsing output directory and file
+    {
+        $path = $1;
+        $file = $2;
+        $file =~ s/\..*?//; # Remove the extension
+        $file .= ".html";
+        $file = "$path/$file";
+        $file =~ s/\/\//\//g; #  // -> /
+    }
+    return($path, $file);
+}
+
+
