@@ -3,6 +3,8 @@ use strict;
 my $prevDate = '';
 my $prevName = '';
 my $person   = 0;
+my $fpOut;
+my $fp;
 
 if((scalar(@ARGV) == 0) ||
    (scalar(@ARGV) >  2) || 
@@ -14,11 +16,28 @@ if((scalar(@ARGV) == 0) ||
 my($inDir, $inFile)   = ParseFileName($ARGV[0]);
 my($outDir, $outFile) = ParseFileName(scalar(@ARGV)==2?$ARGV[1]:'.', $ARGV[0]);
 
-open(my $fpOut, '>', $outFile) or die;
+if(! -d $outDir)
+{
+    `mkdir $outDir`;
+    if(! -d $outDir)
+    {
+        print STDERR "Unable to create output directory: $outDir\n";
+        exit 1;
+    }
+}
+if(!open($fpOut, '>', $outFile))
+{
+    print STDERR "Unable to open output file for writing: $outFile\n";
+    exit 1;
+}
 
 PrintHTMLHeader($fpOut);
 
-open my $fp, "<:encoding(UTF-8)", $inFile or die;
+if(!open($fp, "<:encoding(UTF-8)", $inFile))
+{
+    print STDERR "Unable to open input file for reading: $inFile\n";
+    exit 1;
+}
 
 while(<$fp>)
 {
@@ -41,7 +60,7 @@ while(<$fp>)
         {
             $person = $person?0:1;
             $prevName = $name;
-            ClearBoth();
+            ClearBoth($fpOut);
         }
 
         PrintMessage($fpOut, $person, $name, $time, $text);
@@ -59,13 +78,13 @@ sub PrintDate
 {
     my($fpOut, $date) = @_;
 
-    ClearBoth();
+    ClearBoth($fpOut);
     print $fpOut <<__EOF;
 <div class='datewrap'>
   <div class='date'>$date</div>
 </div>
 __EOF
-    ClearBoth();
+    ClearBoth($fpOut);
 }
 
 sub PrintMessage
@@ -238,30 +257,31 @@ __EOF
 
 sub ParseFileName
 {
-    my($path1, $path2) = @_;
+    my($inPathFile1, $inPathFile2) = @_;
     my $path = '';
     my $file = '';
 
-    if($path2 eq '') # Parsing and input filename
+    if($inPathFile2 eq '') # Parsing and input filename
     {
-        if($path1 =~ /(.*)\/(.*?)/)
+        if($inPathFile1 =~ /(.*)\/(.*?)$/)
         {
             $path = $1;
-            $file = $2;
+            $file = $inPathFile1;
         }
         else
         {
             $path = '.';
-            $file = $2;
+            $file = $inPathFile1;
         }
     }
     else # Parsing output directory and file
     {
-        $path = $1;
-        $file = $2;
-        $file =~ s/\..*?//; # Remove the extension
-        $file .= ".html";
-        $file = "$path/$file";
+        $path = $inPathFile1;
+        $file = $inPathFile2;
+        $file =~ s/.*\///;   # Remove the path
+        $file =~ s/\..*?$//; # Remove the extension
+        $file .= ".html";    # Add the HTML extension
+        $file = "$path/$file"; # Add the new path
         $file =~ s/\/\//\//g; #  // -> /
     }
     return($path, $file);

@@ -32,7 +32,7 @@ done
 
 # Unpack emojis
 cd $EMOJIS
-tar zxvf $HERE/emojis.tgz
+tar zxf $HERE/emojis.tgz
 mv emojis/* .
 rmdir emojis
 cd $HERE
