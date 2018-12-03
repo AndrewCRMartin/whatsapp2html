@@ -1,11 +1,18 @@
 #!/usr/bin/perl -s
 use strict;
+use Cwd qw(abs_path);
+use FindBin;
+
 my $prevDate = '';
 my $prevName = '';
 my $person   = 0;
 my $fpOut;
 my $fp;
+my $shareDir = abs_path("$FindBin::Bin/share/whatsapp2html");
+my $emojiInDir = "$shareDir/emojis";
+my $cssInDir   = "$shareDir/css";
 
+# Check command line
 if((scalar(@ARGV) == 0) ||
    (scalar(@ARGV) >  2) || 
    defined($::h))
@@ -13,9 +20,12 @@ if((scalar(@ARGV) == 0) ||
     UsageDie();
 }
 
+# Set input and output files and directories
 my($inDir, $inFile)   = ParseFileName($ARGV[0]);
 my($outDir, $outFile) = ParseFileName(scalar(@ARGV)==2?$ARGV[1]:'.', $ARGV[0]);
+my $emojiOutDir       = "$outDir/emojis";
 
+# Create output directory if needed
 if(! -d $outDir)
 {
     `mkdir $outDir`;
@@ -25,19 +35,38 @@ if(! -d $outDir)
         exit 1;
     }
 }
+# Create output directory for emojis if needed
+if(! -d $emojiOutDir)
+{
+    `mkdir $emojiOutDir`;
+    if(! -d $emojiOutDir)
+    {
+        print STDERR "Unable to create output emojis directory: $emojiOutDir\n";
+        exit 1;
+    }
+}
+
+# Open output file for writing
 if(!open($fpOut, '>', $outFile))
 {
     print STDERR "Unable to open output file for writing: $outFile\n";
     exit 1;
 }
 
-PrintHTMLHeader($fpOut);
-
+# Open input file for reading
 if(!open($fp, "<:encoding(UTF-8)", $inFile))
 {
     print STDERR "Unable to open input file for reading: $inFile\n";
     exit 1;
 }
+
+### Start work! ###
+
+# Copy in the CSS file if needed
+`cp $cssInDir/whatsapp.css $outDir` if(! -f "$outDir/whatsapp.css");
+
+# Print header and start processing
+PrintHTMLHeader($fpOut);
 
 while(<$fp>)
 {
