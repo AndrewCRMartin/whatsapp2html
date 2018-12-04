@@ -24,9 +24,24 @@ sub FixUpEmojis
     my @files = readdir $dfh;
     foreach my $file (@files)
     {
-        if($file =~ /.*_(.*?)\.png/)
+        my $unicode = '';
+        if($file =~ /modifier-fitzpatrick/)
         {
-            my $unicode = $1;
+            if($file =~ /.*modifier*_(.*)_.*\.png/)
+            {
+                $unicode = $1;
+            }
+        }
+        else
+        {
+            if($file =~ /.*_(.*?)\.png/)
+            {
+                $unicode = $1;
+            }
+        }
+
+        if($unicode ne '')
+        {
             my $link = "$unicode.png";
             if((! -e $link) || $::force)
             {
