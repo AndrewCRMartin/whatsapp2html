@@ -23,8 +23,17 @@ sub FixUpEmojis
         my $unicode = '';
         if($file =~ /modifier-fitzpatrick/)
         {
-            if($file =~ /.*modifier*_(.*)_.*\.png/)
+            if($file =~ /.*modifier.*_(.*)_.*\.png/)
             {
+                # The Fitzpatrick modifier emojis have a name with
+                # xxxx_unicode-unicode[-unicode...]_unicode.png
+                # The part that we want is between TWO underscores
+                $unicode = $1;
+            }
+            elsif($file =~ /.*modifier.*_(.*)\.png/)
+            {
+                # The exception is just colour swatches where there is only
+                # one underscore
                 $unicode = $1;
             }
         }
