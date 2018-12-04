@@ -137,10 +137,11 @@ sub PrintMessage
         
 }
 
+
 # This code needs to be a bit more complex since the extended codes
 # are not all three characters as assumed here. Some are 8-, 7-, 
 # or 6-part, lots are 5-, 4-, 3- or 2-part
-sub PrintHex
+sub PrintHexOld
 {
     my($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet) = @_;
 
@@ -360,5 +361,80 @@ sub CopyFile
             `cp $InDir/$File $OutDir`;
         }
     }
+
+    my $success = 0;
+    $success = 1 if( -e "$OutDir/$File");
+    return($success);
+}
+
+
+
+sub CreateBaseFilename
+{
+    my($nparts, @parts) = @_;
+    my $filename = '';
+    for(my $i=0; $i<$nparts; $i++)
+    {
+        $filename .= '-' if($filename ne '');
+        $filename .= $parts[$i];
+    }
+    return($filename);
+}
+
+# This code needs to be a bit more complex since the extended codes
+# are not all three characters as assumed here. Some are 8-, 7-, 
+# or 6-part, lots are 5-, 4-, 3- or 2-part
+sub PrintHex
+{
+    my($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet) = @_;
+
+    # While we have some hex characters
+    while($nHexSet)
+    {
+        # Start with the longest possible and work down to 1
+        for(my $hexSize=min($nHexSet, 5); $hexSize>=1; $hexSize--)
+        {
+            # Create a filename which combines the codes
+            my $allHex = CreateBaseFilename($hexSize, @hexSet);
+
+            # Create the filename and try to copy it over from our store
+            # of emojis
+            my $emojiFile = $allHex . '.png';
+
+            print STDERR "Trying $emojiFile\n" if(defined($::debug));
+            CopyFile($emojiFile, $emojiInDir, $emojiOutDir);
+
+            # If  the copy was OK, then we have one of these extended emojis, so
+            # reference it in the HTML
+            if( -e "$emojiOutDir/$emojiFile")
+            {
+                $out .= "<img src='emojis/$emojiFile' width='30px' alt='{$allHex}'/>";
+                
+                # Move on to the next Unicode character
+                for(my $i=0; $i<$hexSize; $i++)
+                {
+                    shift @hexSet;
+                    $nHexSet--;
+                }
+            }
+            elsif($hexSize == 1)
+            {
+                $out .= "{$allHex}";
+                
+                shift @hexSet;
+                $nHexSet--;
+            }
+            last if(! $nHexSet);
+        }
+    }
+
+    return($out);
+}
+
+sub min
+{
+    my($a, $b) = @_;
+    return ($a) if($a < $b);
+    return($b);
 }
 
