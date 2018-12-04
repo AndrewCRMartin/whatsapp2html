@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -s
 use strict;
 $::emojiURL = "https://emojipedia.org/whatsapp/2.17/";
 if(scalar(@ARGV))
@@ -14,8 +14,8 @@ if(scalar(@ARGV))
     }
 }
 
-GrabEmojis($::emojiURL);
-FixUpEmojis();
+GrabEmojis($::emojiURL) if(!defined($::r));
+FixUpEmojis() if(!defined ($::n));
 
 sub FixUpEmojis
 {
@@ -112,7 +112,9 @@ sub UsageDie
 
 getemojis.pl
 
-Usage: getemojis.pl [-force] [url]
+Usage: getemojis.pl [-n][-force] [url]
+       -n     Do not rename the files
+       -r     Only rename the files
        -force Download files even if they exist
 
 Gets WhatsApp emojis as PNG files and rename them to their UNICODE names.

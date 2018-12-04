@@ -207,15 +207,16 @@ sub EmojifyText
         my $asc = ord($char);
         if($asc < 255)  # If it's s normal character
         {
-            # Flush out any Unicode characters that we have
-            $out = PrintHex($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet);
+            if($nHexSet)
+            {
+                # Flush out any Unicode characters that we have
+                $out = PrintHex($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet);
+                @hexSet  = ();
+                $nHexSet = 0;
+            }
 
             # Add the normal character
             $out    .= $char;
-
-            # Clear the lists of Unicode characters
-            @hexSet  = ();
-            $nHexSet = 0;
         }
         elsif($asc == 8217) # Special case of an inverted comma
         {
@@ -230,8 +231,11 @@ sub EmojifyText
         }
     }
 
-    # Flush out any remaining unicode characters
-    $out = PrintHex($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet);
+    if($nHexSet)
+    {
+        # Flush out any remaining unicode characters
+        $out = PrintHex($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet);
+    }
 
     return($out);
 }
