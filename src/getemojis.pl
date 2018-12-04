@@ -1,17 +1,13 @@
 #!/usr/bin/perl -s
 use strict;
+
+UsageDie() if defined($::h);
+
 $::emojiURL = "https://emojipedia.org/whatsapp/2.17/";
 if(scalar(@ARGV))
 {
     my $val = shift @ARGV;
-    if($val eq "-h")
-    { 
-        UsageDie();
-    }
-    else
-    {
-        $::emojiURL = $val;
-    }
+    $::emojiURL = $val;
 }
 
 GrabEmojis($::emojiURL) if(!defined($::r));
