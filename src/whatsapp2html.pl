@@ -1,8 +1,53 @@
 #!/usr/bin/perl -s
+#*************************************************************************
+#
+#   Program:    whatsapp2html
+#   File:       whatsapp2html.pl
+#   
+#   Version:    V1.0
+#   Date:       04.12.18
+#   Function:   Convert an exported WhatsApp chat to HTML
+#   
+#   Copyright:  (c) Dr. Andrew C. R. Martin, 2018
+#   Author:     Dr. Andrew C. R. Martin
+#   EMail:      andrew@bioinf.org.uk
+#               
+#*************************************************************************
+#
+#   This program is not in the public domain, but it may be copied
+#   according to the conditions laid out in the accompanying file
+#   COPYING.DOC
+#
+#   The code may be modified as required, but any modifications must be
+#   documented so that the person responsible can be identified. If 
+#   someone else breaks this code, I don't want to be blamed for code 
+#   that does not work! 
+#
+#   The code may not be sold commercially or included as part of a 
+#   commercial product except as described in the file COPYING.DOC.
+#
+#*************************************************************************
+#
+#   Description:
+#   ============
+#
+#*************************************************************************
+#
+#   Usage:
+#   ======
+#
+#*************************************************************************
+#
+#   Revision History:
+#   =================
+#   V1.0   04.12.18  Original
+#
+#*************************************************************************
 use strict;
 use Cwd qw(abs_path);
 use FindBin;
 
+#*************************************************************************
 my $prevDate = '';
 my $prevName = '';
 my $person   = 0;
@@ -35,6 +80,7 @@ if(! -d $outDir)
         exit 1;
     }
 }
+
 # Create output directory for emojis if needed
 if(! -d $emojiOutDir)
 {
@@ -60,7 +106,7 @@ if(!open($fp, "<:encoding(UTF-8)", $inFile))
     exit 1;
 }
 
-### Start work! ###
+#***                            Start work!                                  ***
 
 # Copy in the CSS file if needed
 `cp $cssInDir/whatsapp.css $outDir` if(! -f "$outDir/whatsapp.css");
@@ -92,17 +138,28 @@ while(<$fp>)
             ClearBoth($fpOut);
         }
 
-        PrintMessage($fpOut, $person, $name, $time, $text, $emojiInDir, $emojiOutDir, $inDir, $outDir);
+        PrintMessage($fpOut, $person, $name, $time, $text, $emojiInDir, 
+                     $emojiOutDir, $inDir, $outDir);
     }
     elsif(length && (! /^\d+\/\d+\/\d+/))
     {
         my $text = $_;
-        PrintMessage($fpOut, $person, '', '', $text, $emojiInDir, $emojiOutDir, $inDir, $outDir);
+        PrintMessage($fpOut, $person, '', '', $text, $emojiInDir, 
+                     $emojiOutDir, $inDir, $outDir);
     }
 }
 ClearBoth($fpOut);
 PrintHTMLFooter($fpOut);
 
+#*************************************************************************
+# void PrintDate($fpOut, $date)
+# -----------------------------
+# \param[in]   $fpOut   Output file pointer
+# \patam[in]   $date    Date read from file
+#
+# Prints the date in HTML
+#
+# 04.12.18  Original   By: ACRM
 sub PrintDate
 {
     my($fpOut, $date) = @_;
@@ -116,6 +173,23 @@ __EOF
     ClearBoth($fpOut);
 }
 
+#*************************************************************************
+# void PrintMessage($fpOut, $person, $name, $time, $text, $emojiInDir, 
+#                   $emojiOutDir, $inDir, $outDir)
+# --------------------------------------------------------------------
+# \param[in]   $fpOut
+# \param[in]   $person
+# \param[in]   $name
+# \param[in]   $time
+# \param[in]   $text
+# \param[in]   $emojiInDir
+# \param[in]   $emojiOutDir
+# \param[in]   $inDir
+# \param[in]   $outDir
+#
+# Prints a person's message
+#
+# 04.12.18  Original   By: ACRM
 sub PrintMessage
 {
     my($fpOut, $person, $name, $time, $text, $emojiInDir, $emojiOutDir, $inDir, $outDir) = @_;
@@ -134,67 +208,13 @@ sub PrintMessage
         print $fpOut "  <p class='msgbody'>$text</p>\n";
         print $fpOut "</div> <!-- person person$person --> \n";
     }
-        
 }
 
 
-# This code needs to be a bit more complex since the extended codes
-# are not all three characters as assumed here. Some are 8-, 7-, 
-# or 6-part, lots are 5-, 4-, 3- or 2-part
-sub PrintHexOld
-{
-    my($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet) = @_;
-
-    # If we have 3 or more Unicode characters in a row
-    while($nHexSet >= 3)
-    {
-        # Create a filename which combines  the first three codes
-        my $allHex = $hexSet[0] . '-' . $hexSet[1] . '-' . $hexSet[2];
-
-        # Create the filename and try to copy it over from our store
-        # of emojis
-        my $emojiFile = $allHex . '.png';
-        CopyFile($emojiFile, $emojiInDir, $emojiOutDir);
-
-        # If  the copy was OK, then we have one of these extended emojis, so
-        # reference it in the HTML
-        if( -e "$emojiOutDir/$emojiFile")
-        {
-            $out .= "<img src='emojis/$emojiFile' width='30px' alt='{$allHex}'/>";
-
-            # Move on to the next Unicode character
-            for(my $i=0; $i<3; $i++)
-            {
-                shift @hexSet;
-                $nHexSet--;
-            }
-        }
-        else
-        {
-            # The copy failed so we just have a normal single character emoji. Copy
-            # that over and reference it
-            CopyFile("$hexSet[0].png", $emojiInDir, $emojiOutDir);
-            
-            $out .= "<img src='emojis/$hexSet[0].png' width='30px' alt='{$hexSet[0]}'/>";
-
-            # Move on to the next Unicode character
-            shift @hexSet;
-            $nHexSet--;
-        }
-    }
-
-    # Display any remaining Unicode characters
-    while($nHexSet)
-    {
-        CopyFile("$hexSet[0].png", $emojiInDir, $emojiOutDir);
-        $out .= "<img src='emojis/$hexSet[0].png' width='30px' alt='{$hexSet[0]}'/>";
-        shift @hexSet;
-        $nHexSet--;
-    }
-    return($out);
-}
-
-
+#*************************************************************************
+# $out = EmojifyText($text, $emojiInDir, $emojiOutDir)
+# ----------------------------------------------------
+# 04.12.18  Original   By: ACRM
 sub EmojifyText
 {
     my($text, $emojiInDir, $emojiOutDir) = @_;
@@ -241,6 +261,10 @@ sub EmojifyText
     return($out);
 }
 
+#*************************************************************************
+# void PrintHTMLHeader()
+# ----------------------
+# 04.12.18  Original   By: ACRM
 sub PrintHTMLHeader
 {
     my($fpOut) = @_;
@@ -259,6 +283,10 @@ __EOF
 
 }
 
+#*************************************************************************
+# void PrintHTMLFooter()
+# ----------------------
+# 04.12.18  Original   By: ACRM
 sub PrintHTMLFooter
 {
     my($fpOut) = @_;
@@ -273,6 +301,10 @@ __EOF
 
 }
 
+#*************************************************************************
+# void ClearBoth($fpOut)
+# ----------------------
+# 04.12.18  Original   By: ACRM
 sub ClearBoth
 {
     my($fpOut) = @_;
@@ -280,6 +312,10 @@ sub ClearBoth
     print $fpOut "<div style='clear: both;'>&nbsp;</div>\n";
 }
 
+#*************************************************************************
+# void FixImageLink($text, $inDir, $outDir)
+# -----------------------------------------
+# 04.12.18  Original   By: ACRM
 sub FixImageLink
 {
     my($text, $inDir, $outDir) = @_;
@@ -303,21 +339,11 @@ sub FixImageLink
     return($text);
 }
 
-sub UsageDie
-{
-    print <<__EOF;
 
-whatsapp2html V1.0 (c) Andrew C.R. Martin
-        
-Usage: whatsapp2html whatsapp.txt [outputdir]
-
-Takes a WhatsApp conversation dump and converts it to HTML, embedding emojis
-and multimedia as required.    
-    
-__EOF
-    exit 0;
-}
-
+#*************************************************************************
+# void ParseFileName($inPathFile1, $inPathFile2)
+# ----------------------------------------------
+# 04.12.18  Original   By: ACRM
 sub ParseFileName
 {
     my($inPathFile1, $inPathFile2) = @_;
@@ -351,6 +377,10 @@ sub ParseFileName
 }
 
 
+#*************************************************************************
+# void CopyFile($File, $InDir, $OutDir)
+# -------------------------------------
+# 04.12.18  Original   By: ACRM
 sub CopyFile
 {
     my($File, $InDir, $OutDir) = @_;
@@ -362,6 +392,17 @@ sub CopyFile
         }
     }
 
+    # If it still doesn't exist, try copying a version with -fe0f on the end
+    if(! -e "$OutDir/$File")
+    {
+        my $newFile = $File;
+        $newFile =~ s/\.png/-fe0f\.png/;
+        if( -e "$InDir/$newFile")
+        {
+            `cp $InDir/$newFile $OutDir/$File`;
+        }
+    }
+
     my $success = 0;
     $success = 1 if( -e "$OutDir/$File");
     return($success);
@@ -369,6 +410,10 @@ sub CopyFile
 
 
 
+#*************************************************************************
+# void CreateBaseFilename($nparts, @parts)
+# ----------------------------------------
+# 04.12.18  Original   By: ACRM
 sub CreateBaseFilename
 {
     my($nparts, @parts) = @_;
@@ -381,9 +426,13 @@ sub CreateBaseFilename
     return($filename);
 }
 
+#*************************************************************************
+# void PrintHex($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet)
+# -----------------------------------------------------------------
 # This code needs to be a bit more complex since the extended codes
 # are not all three characters as assumed here. Some are 8-, 7-, 
 # or 6-part, lots are 5-, 4-, 3- or 2-part
+# 04.12.18  Original   By: ACRM
 sub PrintHex
 {
     my($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet) = @_;
@@ -402,11 +451,10 @@ sub PrintHex
             my $emojiFile = $allHex . '.png';
 
             print STDERR "Trying $emojiFile\n" if(defined($::debug));
-            CopyFile($emojiFile, $emojiInDir, $emojiOutDir);
 
             # If  the copy was OK, then we have one of these extended emojis, so
             # reference it in the HTML
-            if( -e "$emojiOutDir/$emojiFile")
+            if(CopyFile($emojiFile, $emojiInDir, $emojiOutDir))
             {
                 $out .= "<img src='emojis/$emojiFile' width='30px' alt='{$allHex}'/>";
                 
@@ -431,6 +479,11 @@ sub PrintHex
     return($out);
 }
 
+
+#*************************************************************************
+# void min($a, $b)
+# ----------------
+# 04.12.18  Original   By: ACRM
 sub min
 {
     my($a, $b) = @_;
@@ -438,3 +491,21 @@ sub min
     return($b);
 }
 
+#*************************************************************************
+# void UsageDie()
+# ---------------
+# 04.12.18  Original 
+sub UsageDie
+{
+    print <<__EOF;
+
+whatsapp2html V1.0 (c) Andrew C.R. Martin
+        
+Usage: whatsapp2html [-debug] whatsapp.txt [outputdir]
+
+Takes a WhatsApp conversation dump and converts it to HTML, embedding emojis
+and multimedia as required.    
+    
+__EOF
+    exit 0;
+}
