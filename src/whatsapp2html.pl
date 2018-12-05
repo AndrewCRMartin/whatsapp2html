@@ -10,7 +10,7 @@
 #   
 #   Copyright:  (c) Dr. Andrew C. R. Martin, 2018
 #   Author:     Dr. Andrew C. R. Martin
-#   EMail:      andrew@bioinf.org.uk
+#   EMail:      andrew@andrew-martin.org
 #               
 #*************************************************************************
 #
@@ -154,7 +154,7 @@ PrintHTMLFooter($fpOut);
 #*************************************************************************
 # void PrintDate($fpOut, $date)
 # -----------------------------
-# \param[in]   $fpOut   Output file pointer
+# \param[in]   $fpOut   Output file handle
 # \patam[in]   $date    Date read from file
 #
 # Prints the date in HTML
@@ -177,22 +177,24 @@ __EOF
 # void PrintMessage($fpOut, $person, $name, $time, $text, $emojiInDir, 
 #                   $emojiOutDir, $inDir, $outDir)
 # --------------------------------------------------------------------
-# \param[in]   $fpOut
-# \param[in]   $person
-# \param[in]   $name
-# \param[in]   $time
-# \param[in]   $text
-# \param[in]   $emojiInDir
-# \param[in]   $emojiOutDir
-# \param[in]   $inDir
-# \param[in]   $outDir
+# \param[in]   $fpOut        Output file handle
+# \param[in]   $person       The person number
+# \param[in]   $name         The name of the person
+# \param[in]   $time         The time of the message
+# \param[in]   $text         The text of the message
+# \param[in]   $emojiInDir   The directory containing the emoji catalogue
+# \param[in]   $emojiOutDir  The ouput emoji directory
+# \param[in]   $inDir        The input directory containing WhatsApp text
+#                            and media
+# \param[in]   $outDir       The ouput directory for the HTML version
 #
 # Prints a person's message
 #
 # 04.12.18  Original   By: ACRM
 sub PrintMessage
 {
-    my($fpOut, $person, $name, $time, $text, $emojiInDir, $emojiOutDir, $inDir, $outDir) = @_;
+    my($fpOut, $person, $name, $time, $text, $emojiInDir, $emojiOutDir, 
+       $inDir, $outDir) = @_;
     $text = FixImageLink($text, $inDir, $outDir);
     $text = EmojifyText($text, $emojiInDir, $emojiOutDir);
     if($name ne '')
@@ -214,6 +216,14 @@ sub PrintMessage
 #*************************************************************************
 # $out = EmojifyText($text, $emojiInDir, $emojiOutDir)
 # ----------------------------------------------------
+# \param[in] $text         The text in which to insert emojis
+# \param[in] $emojiInDir   The directory containing the emoji catalogue
+# \param[in] $emojiOutDir  The ouput emoji directory
+# \return    $out          The resulting text
+#
+# Takes a line of text and replaces Unicode for emojis with an <img> tag
+# linking to the image
+#
 # 04.12.18  Original   By: ACRM
 sub EmojifyText
 {
@@ -261,9 +271,14 @@ sub EmojifyText
     return($out);
 }
 
+
 #*************************************************************************
-# void PrintHTMLHeader()
-# ----------------------
+# void PrintHTMLHeader($fpOut)
+# ----------------------------
+# \param[in]     $fpOut    Output file handle
+#
+# Prints an HTML header
+#
 # 04.12.18  Original   By: ACRM
 sub PrintHTMLHeader
 {
@@ -284,8 +299,12 @@ __EOF
 }
 
 #*************************************************************************
-# void PrintHTMLFooter()
-# ----------------------
+# void PrintHTMLFooter($fpOut)
+# ----------------------------
+# \param[in]     $fpOut    Output file handle
+#
+# Prints an HTML footer
+#
 # 04.12.18  Original   By: ACRM
 sub PrintHTMLFooter
 {
@@ -301,9 +320,14 @@ __EOF
 
 }
 
+
 #*************************************************************************
 # void ClearBoth($fpOut)
 # ----------------------
+# \param[in]     $fpOut    Output file handle
+#
+# Prints a <div> to clear the left and right columns in the HTML
+#
 # 04.12.18  Original   By: ACRM
 sub ClearBoth
 {
@@ -312,9 +336,22 @@ sub ClearBoth
     print $fpOut "<div style='clear: both;'>&nbsp;</div>\n";
 }
 
+
 #*************************************************************************
-# void FixImageLink($text, $inDir, $outDir)
+# $text=FixImageLink($text, $inDir, $outDir)
 # -----------------------------------------
+# \param[in]  $text    The text in which to insert media links
+# \param[in]  $inDir   The input directory containing WhatsApp text
+#                      and media
+# \param[in]  $outDir  The ouput directory for the HTML version
+# \return     $text    The resulting output text
+#
+# Replaces indicators of attached files with an <img> tag to display the
+# image (and an <a> to obtain the full size image). Also replaces video
+# files with an <a> tag.
+#
+# We need to switch to HTML5 so we can have embedded vidoes
+#
 # 04.12.18  Original   By: ACRM
 sub FixImageLink
 {
@@ -341,8 +378,18 @@ sub FixImageLink
 
 
 #*************************************************************************
-# void ParseFileName($inPathFile1, $inPathFile2)
-# ----------------------------------------------
+# ($path, $file) = ParseFileName($inPathFile1, $inPathFile2)
+# ----------------------------------------------------------
+# \param[in] $inPathFile1  First  [path/]file
+# \param[in] $inPathFile2  Second [path/]file (optional)
+# \return    $path         The resulting path
+# \return    $file         The full filename with path
+#
+# Parse a supplied filename to obtain both the path and the full filename.
+# When given one parameter this is parsed
+# When given two parameters, the path from the first parameter is used
+# with the filename from the second parameter
+#
 # 04.12.18  Original   By: ACRM
 sub ParseFileName
 {
@@ -378,8 +425,21 @@ sub ParseFileName
 
 
 #*************************************************************************
-# void CopyFile($File, $InDir, $OutDir)
-# -------------------------------------
+# $success=CopyFile($File, $InDir, $OutDir)
+# -----------------------------------------
+# \param[in] $File    A file to be copied
+# \param[in] $InDir   File in which it is (or may be) stored
+# \param[in] $OutDir  File in which it should be placed
+# \return    $success Was it copied?
+#
+# If the file does not exist in $OutDir, then copy if from $InDir and
+# check if it was successful. 
+# If it wasn't, try again, but adding -fe0f to the filename if it's a 
+# PNG file (i.e. xxxx.png becomes # xxxx-fe0f.pdb). This is for some 
+# emojis that have this in the filename but not in the WhatsApp Unicode.
+# Finally checks again if the file was copied and returns an indication
+# of success
+#
 # 04.12.18  Original   By: ACRM
 sub CopyFile
 {
@@ -409,10 +469,16 @@ sub CopyFile
 }
 
 
-
 #*************************************************************************
-# void CreateBaseFilename($nparts, @parts)
-# ----------------------------------------
+# $filename=CreateBaseFilename($nparts, @parts)
+# ---------------------------------------------
+# \param[in] $nparts
+# \param[in] @parts
+# \return    $filename
+#
+# Assembles the base part of a Unicode filename of the form xxxx-xxxx-xxxx
+# by assmbling the parts in the @parts array.
+#
 # 04.12.18  Original   By: ACRM
 sub CreateBaseFilename
 {
@@ -426,12 +492,23 @@ sub CreateBaseFilename
     return($filename);
 }
 
+
 #*************************************************************************
-# void PrintHex($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet)
+# $out=PrintHex($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet)
 # -----------------------------------------------------------------
-# This code needs to be a bit more complex since the extended codes
-# are not all three characters as assumed here. Some are 8-, 7-, 
-# or 6-part, lots are 5-, 4-, 3- or 2-part
+# \param[in] $out
+# \param[in] $emojiInDir
+# \param[in] $emojiOutDir
+# \param[in] $nHexSet
+# \param[in] @hexSet
+# \return    $out
+#
+# Works through the provided set of hex Unicode and does the actual
+# substitution by <img> tags. We start of trying to find an emoji with
+# as many Unicode elements as possible (up to 5); if that fails we
+# successively try fewer elements (down to 1) until we succesfully find
+# a file to which to link.
+#
 # 04.12.18  Original   By: ACRM
 sub PrintHex
 {
@@ -452,7 +529,7 @@ sub PrintHex
 
             print STDERR "Trying $emojiFile\n" if(defined($::debug));
 
-            # If  the copy was OK, then we have one of these extended emojis, so
+            # If  the copy was OK, then we have the extended emojis, so
             # reference it in the HTML
             if(CopyFile($emojiFile, $emojiInDir, $emojiOutDir))
             {
@@ -467,11 +544,15 @@ sub PrintHex
             }
             elsif($hexSize == 1)
             {
+                # We failed even though it was a 1-character Unicode
+                # so simply put in some text
                 $out .= "{$allHex}";
                 
                 shift @hexSet;
                 $nHexSet--;
             }
+
+            # Exit the loop if we have run out of Unicode elements
             last if(! $nHexSet);
         }
     }
@@ -481,8 +562,14 @@ sub PrintHex
 
 
 #*************************************************************************
-# void min($a, $b)
+# $minVal = min($a, $b)
 # ----------------
+# \param[in] $a
+# \param[in] $b
+# \return    $minVal
+#
+# Returns the minimum of two values
+#
 # 04.12.18  Original   By: ACRM
 sub min
 {
@@ -491,9 +578,12 @@ sub min
     return($b);
 }
 
+
 #*************************************************************************
-# void UsageDie()
-# ---------------
+# void UsageDie(void)
+# -------------------
+# Prints a usage message and exits
+#
 # 04.12.18  Original 
 sub UsageDie
 {
