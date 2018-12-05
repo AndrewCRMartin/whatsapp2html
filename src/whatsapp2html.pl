@@ -472,9 +472,9 @@ sub CopyFile
 #*************************************************************************
 # $filename=CreateBaseFilename($nparts, @parts)
 # ---------------------------------------------
-# \param[in] $nparts
-# \param[in] @parts
-# \return    $filename
+# \param[in] $nparts    Number of parts to use
+# \param[in] @parts     Array of parts for the name
+# \return    $filename  Filestem (no extension)
 #
 # Assembles the base part of a Unicode filename of the form xxxx-xxxx-xxxx
 # by assmbling the parts in the @parts array.
@@ -496,12 +496,12 @@ sub CreateBaseFilename
 #*************************************************************************
 # $out=PrintHex($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet)
 # -----------------------------------------------------------------
-# \param[in] $out
-# \param[in] $emojiInDir
-# \param[in] $emojiOutDir
-# \param[in] $nHexSet
-# \param[in] @hexSet
-# \return    $out
+# \param[in] $out         Current string for output
+# \param[in] $emojiInDir  The directory containing the emoji catalogue
+# \param[in] $emojiOutDir The ouput emoji directory
+# \param[in] $nHexSet     The number of items in a list of hex Unicodes
+# \param[in] @hexSet      The list of hex unicodes
+# \return    $out         The updated string for output
 #
 # Works through the provided set of hex Unicode and does the actual
 # substitution by <img> tags. We start of trying to find an emoji with
@@ -563,19 +563,18 @@ sub PrintHex
 
 #*************************************************************************
 # $minVal = min($a, $b)
-# ----------------
-# \param[in] $a
-# \param[in] $b
-# \return    $minVal
+# ---------------------
+# \param[in] $a       A value
+# \param[in] $b       A second value
+# \return    $minVal  The minimum value
 #
-# Returns the minimum of two values
+# Returns the minimum of two numeric values
 #
 # 04.12.18  Original   By: ACRM
 sub min
 {
     my($a, $b) = @_;
-    return ($a) if($a < $b);
-    return($b);
+    return (($a < $b)?$a:$b);
 }
 
 
@@ -591,10 +590,18 @@ sub UsageDie
 
 whatsapp2html V1.0 (c) Andrew C.R. Martin
         
-Usage: whatsapp2html [-debug] whatsapp.txt [outputdir]
+Usage: whatsapp2html [-debug] [pathto/]whatsapp.txt [outputdir]
+       -debug Print some debugging information about emojis
 
 Takes a WhatsApp conversation dump and converts it to HTML, embedding emojis
 and multimedia as required.    
+
+The input can be just a filename (in the current directory) or a full path
+to a file. (Note that it cannot read from standard input.)
+
+If the output directory is not specified then HTML output (including CSS,
+emojis and media files) is to the current directory, otherwise to the
+specified directory.
     
 __EOF
     exit 0;
