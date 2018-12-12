@@ -4,8 +4,8 @@
 #   Program:    whatsapp2html
 #   File:       whatsapp2html.pl
 #   
-#   Version:    V1.0
-#   Date:       04.12.18
+#   Version:    V1.1
+#   Date:       12.12.18
 #   Function:   Convert an exported WhatsApp chat to HTML
 #   
 #   Copyright:  (c) Dr. Andrew C. R. Martin, 2018
@@ -41,6 +41,8 @@
 #   Revision History:
 #   =================
 #   V1.0   04.12.18  Original
+#   V1.1   12.12.18  Puts in correct HTML entity references for pound
+#                    signs, <, > and &
 #
 #*************************************************************************
 use strict;
@@ -191,12 +193,13 @@ __EOF
 # Prints a person's message
 #
 # 04.12.18  Original   By: ACRM
+# 12.12.18  Now calls EmojifyText before FixImageLink
 sub PrintMessage
 {
     my($fpOut, $person, $name, $time, $text, $emojiInDir, $emojiOutDir, 
        $inDir, $outDir) = @_;
-    $text = FixImageLink($text, $inDir, $outDir);
     $text = EmojifyText($text, $emojiInDir, $emojiOutDir);
+    $text = FixImageLink($text, $inDir, $outDir);
     if($name ne '')
     {
         print $fpOut "<div class='person person$person'>\n";
@@ -225,6 +228,7 @@ sub PrintMessage
 # linking to the image
 #
 # 04.12.18  Original   By: ACRM
+# 12.12.18  Puts in entity references for pound, <, >, &
 sub EmojifyText
 {
     my($text, $emojiInDir, $emojiOutDir) = @_;
@@ -236,12 +240,37 @@ sub EmojifyText
     foreach my $char (@chars)
     {
         my $asc = ord($char);
-        if($asc < 255)  # If it's s normal character
+        if($asc == 163)         # Pound sign
+        {
+            $out    .= "&pound;";
+            @hexSet  = ();
+            $nHexSet = 0;
+        }
+        elsif($asc == 60)       # <
+        {
+            $out    .= "&lt;";
+            @hexSet  = ();
+            $nHexSet = 0;
+        }
+        elsif($asc == 62)       # >
+        {
+            $out    .= "&gt;";
+            @hexSet  = ();
+            $nHexSet = 0;
+        }
+        elsif($asc == 38)       # &
+        {
+            $out    .= "&amp;";
+            @hexSet  = ();
+            $nHexSet = 0;
+        }
+        elsif($asc < 255)       # If it's a normal character
         {
             if($nHexSet)
             {
                 # Flush out any Unicode characters that we have
-                $out = PrintHex($out, $emojiInDir, $emojiOutDir, $nHexSet, @hexSet);
+                $out = PrintHex($out, $emojiInDir, $emojiOutDir, 
+                                $nHexSet, @hexSet);
                 @hexSet  = ();
                 $nHexSet = 0;
             }
@@ -584,11 +613,12 @@ sub min
 # Prints a usage message and exits
 #
 # 04.12.18  Original 
+# 12.12.18  V1.1
 sub UsageDie
 {
     print <<__EOF;
 
-whatsapp2html V1.0 (c) Andrew C.R. Martin
+whatsapp2html V1.1 (c) Andrew C.R. Martin
         
 Usage: whatsapp2html [-debug] [pathto/]whatsapp.txt [outputdir]
        -debug Print some debugging information about emojis
