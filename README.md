@@ -1,5 +1,5 @@
-whatsapp2html V1.0 (c) Andrew C.R. Martin
-=========================================
+whatsapp2html (c) Andrew C.R. Martin
+====================================
 
 Installation
 ------------
