@@ -36,6 +36,7 @@ tar zxf $HERE/emojis.tgz
 mv emojis/* .
 rmdir emojis
 cd $HERE
+cp extraemojis/* $EMOJIS
 
 # Copy CSS
 cp src/whatsapp.css $CSS
