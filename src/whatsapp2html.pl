@@ -4,11 +4,11 @@
 #   Program:    whatsapp2html
 #   File:       whatsapp2html.pl
 #   
-#   Version:    V1.1
-#   Date:       12.12.18
+#   Version:    V1.2
+#   Date:       09.01.19
 #   Function:   Convert an exported WhatsApp chat to HTML
 #   
-#   Copyright:  (c) Dr. Andrew C. R. Martin, 2018
+#   Copyright:  (c) Dr. Andrew C. R. Martin, 2018-2019
 #   Author:     Dr. Andrew C. R. Martin
 #   EMail:      andrew@andrew-martin.org
 #               
@@ -43,6 +43,10 @@
 #   V1.0   04.12.18  Original
 #   V1.1   12.12.18  Puts in correct HTML entity references for pound
 #                    signs, <, > and &
+#   V1.2   09.01.19  Skips comment lines introduced by a #
+#                    if -c or -comment given on the command line, treats
+#                    them as normal lines by stripping the comment
+#                    character
 #
 #*************************************************************************
 use strict;
@@ -120,34 +124,42 @@ while(<$fp>)
 {
     chomp;
 
-    # 01/01/2018, 10:00 - Name name: text
-    if(/(\d.*?),\s+(\d\d:\d\d)\s+-\s+(.*?):\s+(.*)/)
+    if(defined($::comment) || defined($::c))
     {
-        my $date = $1;
-        my $time = $2;
-        my $name = $3;
-        my $text = $4;
-
-        if($date ne $prevDate)
-        {
-            PrintDate($fpOut, $date);
-            $prevDate = $date;
-        }
-        if($name ne $prevName)
-        {
-            $person = $person?0:1;
-            $prevName = $name;
-            ClearBoth($fpOut);
-        }
-
-        PrintMessage($fpOut, $person, $name, $time, $text, $emojiInDir, 
-                     $emojiOutDir, $inDir, $outDir);
+        s/^\#\s*//;
     }
-    elsif(length && (! /^\d+\/\d+\/\d+/))
+
+    if(!/^\#/)
     {
-        my $text = $_;
-        PrintMessage($fpOut, $person, '', '', $text, $emojiInDir, 
-                     $emojiOutDir, $inDir, $outDir);
+        # 01/01/2018, 10:00 - Name name: text
+        if(/^(\d.*?),\s+(\d\d:\d\d)\s+-\s+(.*?):\s+(.*)/)
+        {
+            my $date = $1;
+            my $time = $2;
+            my $name = $3;
+            my $text = $4;
+            
+            if($date ne $prevDate)
+            {
+                PrintDate($fpOut, $date);
+                $prevDate = $date;
+            }
+            if($name ne $prevName)
+            {
+                $person = $person?0:1;
+                $prevName = $name;
+                ClearBoth($fpOut);
+            }
+            
+            PrintMessage($fpOut, $person, $name, $time, $text, $emojiInDir, 
+                         $emojiOutDir, $inDir, $outDir);
+        }
+        elsif(length && (! /^\d+\/\d+\/\d+/))
+        {
+            my $text = $_;
+            PrintMessage($fpOut, $person, '', '', $text, $emojiInDir, 
+                         $emojiOutDir, $inDir, $outDir);
+        }
     }
 }
 ClearBoth($fpOut);
@@ -614,14 +626,16 @@ sub min
 #
 # 04.12.18  Original 
 # 12.12.18  V1.1
+# 09.01.19  V1.2
 sub UsageDie
 {
     print <<__EOF;
 
-whatsapp2html V1.1 (c) Andrew C.R. Martin
+whatsapp2html V1.3 (c) Andrew C.R. Martin
         
-Usage: whatsapp2html [-debug] [pathto/]whatsapp.txt [outputdir]
-       -debug Print some debugging information about emojis
+Usage: whatsapp2html [-comment|-c][-debug] [pathto/]whatsapp.txt [outputdir]
+       -comment|-c Strip comment introducers and treat as normal lines
+       -debug      Print some debugging information about emojis
 
 Takes a WhatsApp conversation dump and converts it to HTML, embedding emojis
 and multimedia as required.    
@@ -632,6 +646,9 @@ to a file. (Note that it cannot read from standard input.)
 If the output directory is not specified then HTML output (including CSS,
 emojis and media files) is to the current directory, otherwise to the
 specified directory.
+
+-comment (or -c) allows you to comment out regions of the text with a #
+but display these lines anyway if the -comment|-c flag is given.
     
 __EOF
     exit 0;
