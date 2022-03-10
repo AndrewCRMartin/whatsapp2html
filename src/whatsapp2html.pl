@@ -8,8 +8,8 @@
 #   Date:       09.01.19
 #   Function:   Convert an exported WhatsApp chat to HTML
 #   
-#   Copyright:  (c) Dr. Andrew C. R. Martin, 2018-2019
-#   Author:     Dr. Andrew C. R. Martin
+#   Copyright:  (c) Prof. Andrew C. R. Martin, 2018-2019
+#   Author:     Prof. Andrew C. R. Martin
 #   EMail:      andrew@andrew-martin.org
 #               
 #*************************************************************************
@@ -406,6 +406,14 @@ sub FixImageLink
         CopyFile($img, $inDir, $outDir);
     }
     if($text =~ /(VID.*)\s+\(file attached\)/)
+    {
+        my $vid = $1;
+        $text =~ s/\s+\(file attached\)//;
+#        $text =~ s/$vid/<embed src='$vid' autostart='false' width='400px' \/>/;
+        $text =~ s/$vid/<a href='$vid' title='$vid'>$vid<\/a>/;
+        CopyFile($vid, $inDir, $outDir);
+    }
+    if($text =~ /(AUD.*)\s+\(file attached\)/)
     {
         my $vid = $1;
         $text =~ s/\s+\(file attached\)//;
